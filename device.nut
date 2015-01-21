@@ -190,6 +190,7 @@ function get_temp()
     
     imp.sleep(0.75);
 
+    local bigdata=[]
     foreach (device, slave_id in slaves)
     {
         // Run through the list of discovered slave devices, getting the temperature
@@ -235,9 +236,18 @@ function get_temp()
                 temp = temp_celsius,
                 time_stamp = getTime()
             }
-            agent.send("new_readings", sensordata);
+            bigdata.append(sensordata);
+            //agent.send("new_readings", sensordata);
         }
     }
+    bigdata.append({
+    device_num = "6",
+    family = "ElectricImp",
+    serial = "Supply Voltage",
+    temp = hardware.voltage(),
+    time_stamp = getTime()    
+    })
+    agent.send("bigdata", bigdata);
  
 }
 
@@ -256,20 +266,19 @@ ow <- hardware.uart57;
 slaves <- [];
 
 // Send a voltage reading over to the server.
-function get_voltage()
-{
-    local sensordata = {
-    device_num = "1",
-    family = "NA",
-    serial = "Supply Voltage",
-    temp = hardware.voltage(),
-    time_stamp = getTime()
-    }
-    agent.send("new_readings", sensordata);
-    server.log(format("Imp Hardware Voltage %3.2f", hardware.voltage()));
-
-}
-get_voltage();
+//function get_voltage()
+//{
+//    local sensordata = {
+//    device_num = "1",
+//    family = "NA",
+//    serial = "Supply Voltage",
+//    temp = hardware.voltage(),
+//    time_stamp = getTime()
+//    }
+//    agent.send("new_readings", sensordata);
+//    server.log(format("Imp Hardware Voltage %3.2f", hardware.voltage()));
+//}
+//get_voltage();
 
 // Enumerate the slaves on the bus
 
