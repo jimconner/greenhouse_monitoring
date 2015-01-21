@@ -51,8 +51,8 @@ device.on("bigdata" function(msg) {
 
     // Setting up Data to be POSTed
     local payload = {
-    un = "Fecn",
-    key = "7zfxbox7ac",
+    un = "your_plotly_username",
+    key = "your_api_key",
     origin = "plot",
     platform = "electricimp",
     args = http.jsonencode(data),
@@ -112,8 +112,8 @@ device.on("new_readings" function(msg) {
 
     // Setting up Data to be POSTed
     local payload = {
-    un = "Fecn",
-    key = "7zfxbox7ac",
+    un = "your_plotly_username",
+    key = "your_api_key",
     origin = "plot",
     platform = "electricimp",
     args = http.jsonencode(data),
