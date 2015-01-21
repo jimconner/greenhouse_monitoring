@@ -44,6 +44,7 @@ device.on("bigdata" function(msg) {
                 title="Voltage (V)",
                 side="right",
                 overlaying="y",
+                range=["2.5","3.5"]
             }
         }
     };
