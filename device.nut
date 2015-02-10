@@ -7,7 +7,7 @@ function getTime() {
     local min = stringTime(date["min"]);
     local hour = stringTime(date["hour"]);
     local day = stringTime(date["day"]);
-    local month = date["month"];
+    local month = date["month"]+1;
     local year = date["year"];
     return year+"-"+month+"-"+day+" "+hour+":"+min+":"+sec;
 }
@@ -149,6 +149,7 @@ function one_wire_slaves()
 {
     id <- [0,0,0,0,0,0,0,0];
     next_device <- 65;
+    //server.log("one_wire_slaves");
 
     while(next_device)
     {
@@ -166,6 +167,7 @@ function one_wire_slaves()
 
 function get_temp()
 {
+    //server.log("getting temps...");
     local temp_LSB = 0; 
     local temp_MSB = 0; 
     local temp_celsius = 0; 
@@ -247,6 +249,15 @@ function get_temp()
     temp = hardware.voltage(),
     time_stamp = getTime()    
     })
+    server.log(format("Supply Voltage: %2.3f", hardware.voltage()));
+    bigdata.append({
+    device_num = "7",
+    family = "ElectricImp",
+    serial = "Light Level",
+    temp = hardware.lightlevel()/10000.0,
+    time_stamp = getTime()    
+    })
+    server.log(format("Light Level: %2.3f", hardware.lightlevel()/10000.0));
     agent.send("bigdata", bigdata);
  
 }
@@ -265,27 +276,11 @@ imp.onidle(function() {
 ow <- hardware.uart57;
 slaves <- [];
 
-// Send a voltage reading over to the server.
-//function get_voltage()
-//{
-//    local sensordata = {
-//    device_num = "1",
-//    family = "NA",
-//    serial = "Supply Voltage",
-//    temp = hardware.voltage(),
-//    time_stamp = getTime()
-//    }
-//    agent.send("new_readings", sensordata);
-//    server.log(format("Imp Hardware Voltage %3.2f", hardware.voltage()));
-//}
-//get_voltage();
-
 // Enumerate the slaves on the bus
 
 one_wire_slaves();
 
 // Start sampling temperature data
 get_temp();
-
 
 
