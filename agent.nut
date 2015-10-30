@@ -1,5 +1,35 @@
+function logByLine(data, linebreak) {
+    local lines = split(data, linebreak);
+    foreach(line in lines) {
+        server.log(line);
+    }
+}
+
+// returns time string
+// use 3600 and multiply by the hours +/- GMT.
+// e.g for +5 GMT local date = date(time()+18000, "u");
+function getTime() {
+    local date = date(time(), "u");
+    local sec = stringTime(date["sec"]);
+    local min = stringTime(date["min"]);
+    local hour = stringTime(date["hour"]);
+    local day = stringTime(date["day"]);
+    local month = stringTime(date["month"]+1);
+    local year = date["year"];
+    return year+"-"+month+"-"+day+" "+hour+":"+min+":"+sec;
+}
+
+// function to fix time string
+function stringTime(num) {
+    if (num < 10)
+        return "0"+num;
+    else
+        return ""+num;
+}
+
 device.on("bigdata" function(msg) {
     local data = [];
+    local time_stamp = getTime();
     foreach (reading in msg)
     {
         //server.log(reading.temp);
@@ -8,26 +38,36 @@ device.on("bigdata" function(msg) {
             location = "Ambient";
         else if ( reading.serial == "00000575b513" )
             location = "Lower Growbed";
-        else if ( reading.serial == "00000575aa83" )
+        else if ( reading.serial == "000006768ed0" )
             location = "Growbed Nutrient Tank";
         else if ( reading.serial == "00000655770d" )
             location="Upper Growbed";
-        else if ( reading.serial == "000006562fd1" )
+        else if ( reading.serial == "00000677b6d9" )
             location="Lower NFT Nutrient Tank";
         else 
         location=reading.serial;
         local yaxis_value="y";
-        if ( location == "Supply Voltage" || location == "Light Level")
+        if ( location == "supplyvoltage" || location == "lightlevel")
             yaxis_value="y2";
+        if ( location == "millibars" )
+            yaxis_value="y3";
+        if ( location == "lux")
+            yaxis_value="y4";
+        
         // Filter out invalid readings
         // Sometimes we read a value of 4096 degrees when there is 
-        // interference on the bus. Let's discard anything over 99 degrees C
+        // interference on the bus. Let's discard anything over 85 degrees C
+        // as that is the max that a DS1820 can measure.
         local y_val = "";
-        if ( reading.temp < 100 )
-            y_val = reading.temp
+        if ( reading.reading_type == "celcius" && reading.reading < 85 )
+            y_val = reading.reading
+            
+        if ( reading.reading_type != "celcius")
+            y_val = reading.reading
         
         data.append({
-            x = reading.time_stamp,
+            //x = reading.time_stamp,
+            x = time_stamp,
             y = y_val,
             name = location,
             yaxis = yaxis_value,
@@ -46,75 +86,29 @@ device.on("bigdata" function(msg) {
             yaxis={
                 title="Temperature (°C)",
                 side="left",
-                range=["-5","35"]
+                range=["-2","35"]
             }
             yaxis2={
                 title="Voltage (V)",
-                side="right",
+                side="left",
+                position=0.05
                 overlaying="y",
                 range=["0","6.6"]
             }
-        }
-    };
-
-    // Setting up Data to be POSTed
-    local payload = {
-    un = "your_plotly_username",
-    key = "your_plotly_api_key",
-    origin = "plot",
-    platform = "electricimp",
-    args = http.jsonencode(data),
-    kwargs = http.jsonencode(layout),
-    version = "0.0.1"
-    };
-
-    // encode data and log
-    local headers = { "Content-Type" : "application/json" };
-    local body = http.urlencode(payload);
-    local url = "https://plot.ly/clientresp";
-    HttpPostWrapper(url, headers, body, true);
-});    
-
-
-// When Device sends new readings, Run this!
-device.on("new_readings" function(msg) {
-
-    //Plotly Data Object
-    local data = [{
-        x = msg.time_stamp, // Time Stamp from Device
-        y = msg.temp // Sensor Reading from Device
-        //yaxis = "y"+msg.device_num
-    }];
-
-    local location=""
-    if ( msg.serial=="000006564987" )
-        location = "Ambient";
-    else if ( msg.serial == "00000575b513" )
-        location = "Lower Growbed";
-    else if ( msg.serial == "00000575aa83" )
-        location = "Growbed Nutrient Tank";
-    else if ( msg.serial == "00000655770d" )
-        location="Upper Growbed";
-    else if ( msg.serial == "000006562fd1" )
-        location="Lower NFT Nutrient Tank";
-    else 
-        location=msg.serial;
-
-    // Plotly Layout Object
-    local layout = {
-        fileopt = "extend",
-        filename = location,
-        //filename = "Mega Graph",
-        layout={
-            yaxis={
-                title="Temperature",
-                side="left",
+            yaxis3={
+                title="Pressure (Millibars)",
+                side="right",
+                overlaying="y",
+                anchor="free",
+                position=0.95
+                range=["950","1050"]
             }
-            //yaxis2={
-            //    title="Voltage",
-            //    side="right",
-            //    overlaying="y",
-            //}
+            yaxis4={
+                title="Lux",
+                side="right",
+                overlaying="y",
+                range=["0","1500"]
+            }
         }
     };
 
@@ -126,15 +120,17 @@ device.on("new_readings" function(msg) {
     platform = "electricimp",
     args = http.jsonencode(data),
     kwargs = http.jsonencode(layout),
-    version = "0.0.1"
+    version = "0.0.2"
     };
 
     // encode data and log
     local headers = { "Content-Type" : "application/json" };
     local body = http.urlencode(payload);
     local url = "https://plot.ly/clientresp";
-    HttpPostWrapper(url, headers, body, true);
-});
+    HttpPostWrapper(url, headers, body, false);
+    //logByLine(http.jsonencode(data), ",");
+    
+});    
 
 
 // Http Request Handler
@@ -143,39 +139,8 @@ function HttpPostWrapper (url, headers, string, log) {
   local response = request.sendsync();
   if (log)
     server.log(http.jsonencode(response));
+    logByLine(http.jsonencode(response), ",");
   return response;
 }
 
-function log_to_1self (location, msg) {
-    // Setting up Data to be POSTed
-    local payload = {
-    un = "app-id-75441150bce89bef25c26a4e2acf429e",
-    key = "app-secret-f81d333ac301ec2b0dd5d757ffb2db6dc6607966a52a8a5d06b58f84b3a72446",
-    objectTags = "greenhouse",
-    actionTags = "temperature",
-    properties = { reading = msg.temp },
-    platform = "electricimp",
-    args = http.jsonencode(data),
-    };
-   
-    // encode data and log
-    local headers = { "Content-Type" : "application/json" };
-    local body = http.urlencode(payload);
-    local url = "https://sandbox.1self.co/v1/streams";
-    HttpPostWrapper(url, headers, body, true);    
-    
-    
- //   {
- //   "objectTags": "teeth,oral,mouth",
- //   "actionTags": "brush,clean",
- //   "properties": {
- //       "duration": 120,
- //       "pressureKgSqm": 0.15
- //   },
- //    "datetime": "2014-11-11T22:30:00.000Z"
-//}
-    
-//POST /v1/streams HTTP/1.1
-//Host: sandbox.1self.co
-//Authorization: democlientid:d69e6fd81afca9faea6262e312aa82f716cab3c10899
-}
+
