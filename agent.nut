@@ -145,37 +145,3 @@ function HttpPostWrapper (url, headers, string, log) {
     server.log(http.jsonencode(response));
   return response;
 }
-
-function log_to_1self (location, msg) {
-    // Setting up Data to be POSTed
-    local payload = {
-    un = "app-id-75441150bce89bef25c26a4e2acf429e",
-    key = "app-secret-f81d333ac301ec2b0dd5d757ffb2db6dc6607966a52a8a5d06b58f84b3a72446",
-    objectTags = "greenhouse",
-    actionTags = "temperature",
-    properties = { reading = msg.temp },
-    platform = "electricimp",
-    args = http.jsonencode(data),
-    };
-   
-    // encode data and log
-    local headers = { "Content-Type" : "application/json" };
-    local body = http.urlencode(payload);
-    local url = "https://sandbox.1self.co/v1/streams";
-    HttpPostWrapper(url, headers, body, true);    
-    
-    
- //   {
- //   "objectTags": "teeth,oral,mouth",
- //   "actionTags": "brush,clean",
- //   "properties": {
- //       "duration": 120,
- //       "pressureKgSqm": 0.15
- //   },
- //    "datetime": "2014-11-11T22:30:00.000Z"
-//}
-    
-//POST /v1/streams HTTP/1.1
-//Host: sandbox.1self.co
-//Authorization: democlientid:d69e6fd81afca9faea6262e312aa82f716cab3c10899
-}
