@@ -114,8 +114,8 @@ device.on("bigdata" function(msg) {
 
     // Setting up Data to be POSTed
     local payload = {
-    un = "your_plotly_username",
-    key = "your_plotly_apikey",
+    un = "Fecn",
+    key = "6t8opg7emt",
     origin = "plot",
     platform = "electricimp",
     args = http.jsonencode(data),
