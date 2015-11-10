@@ -5,8 +5,31 @@ function logByLine(data, linebreak) {
     }
 }
 
+// returns time string
+// use 3600 and multiply by the hours +/- GMT.
+// e.g for +5 GMT local date = date(time()+18000, "u");
+function getTime() {
+    local date = date(time(), "u");
+    local sec = stringTime(date["sec"]);
+    local min = stringTime(date["min"]);
+    local hour = stringTime(date["hour"]);
+    local day = stringTime(date["day"]);
+    local month = stringTime(date["month"]+1);
+    local year = date["year"];
+    return year+"-"+month+"-"+day+" "+hour+":"+min+":"+sec;
+}
+
+// function to fix time string
+function stringTime(num) {
+    if (num < 10)
+        return "0"+num;
+    else
+        return ""+num;
+}
+
 device.on("bigdata" function(msg) {
     local data = [];
+    local time_stamp = getTime();
     foreach (reading in msg)
     {
         //server.log(reading.temp);
@@ -19,7 +42,7 @@ device.on("bigdata" function(msg) {
             location = "Growbed Nutrient Tank";
         else if ( reading.serial == "00000655770d" )
             location="Upper Growbed";
-        else if ( reading.serial == "000006562fd1" )
+        else if ( reading.serial == "00000677b6d9" )
             location="Lower NFT Nutrient Tank";
         else 
         location=reading.serial;
@@ -43,7 +66,8 @@ device.on("bigdata" function(msg) {
             y_val = reading.reading
         
         data.append({
-            x = reading.time_stamp,
+            //x = reading.time_stamp,
+            x = time_stamp,
             y = y_val,
             name = location,
             yaxis = yaxis_value,
@@ -90,8 +114,8 @@ device.on("bigdata" function(msg) {
 
     // Setting up Data to be POSTed
     local payload = {
-    un = "you_plotly_user",
-    key = "your_plotly_key",
+    un = "your_plotly_username",
+    key = "your_plotly_apikey",
     origin = "plot",
     platform = "electricimp",
     args = http.jsonencode(data),
@@ -103,7 +127,7 @@ device.on("bigdata" function(msg) {
     local headers = { "Content-Type" : "application/json" };
     local body = http.urlencode(payload);
     local url = "https://plot.ly/clientresp";
-    HttpPostWrapper(url, headers, body, true);
+    HttpPostWrapper(url, headers, body, false);
     //logByLine(http.jsonencode(data), ",");
     
 });    
@@ -115,9 +139,8 @@ function HttpPostWrapper (url, headers, string, log) {
   local response = request.sendsync();
   if (log)
     server.log(http.jsonencode(response));
-    //logByLine(http.jsonencode(response), ",");
+    logByLine(http.jsonencode(response), ",");
   return response;
 }
-
 
 

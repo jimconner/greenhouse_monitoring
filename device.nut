@@ -286,30 +286,6 @@ local mysensor = LightDevice_BH1750(I2C_89, 0xb8);
 local counter = 0;
 
 
-
-
-// returns time string
-// use 3600 and multiply by the hours +/- GMT.
-// e.g for +5 GMT local date = date(time()+18000, "u");
-function getTime() {
-    local date = date(time(), "u");
-    local sec = stringTime(date["sec"]);
-    local min = stringTime(date["min"]);
-    local hour = stringTime(date["hour"]);
-    local day = stringTime(date["day"]);
-    local month = stringTime(date["month"]+1);
-    local year = date["year"];
-    return year+"-"+month+"-"+day+" "+hour+":"+min+":"+sec;
-}
-
-// function to fix time string
-function stringTime(num) {
-    if (num < 10)
-        return "0"+num;
-    else
-        return ""+num;
-}
-
 function one_wire_reset()
 {
     // Configure UART for 1-Wire RESET timing
@@ -527,7 +503,7 @@ function get_temp()
                 serial = format("%02x%02x%02x%02x%02x%02x", slave_id[1], slave_id[2], slave_id[3], slave_id[4], slave_id[5], slave_id[6]),
                 reading = temp_celsius,
                 reading_type = "celcius",
-                time_stamp = getTime()
+                //time_stamp = getTime()
             }
             bigdata.append(sensordata);
         }
@@ -538,7 +514,7 @@ function get_temp()
     serial = "supplyvoltage",
     reading = hardware.voltage(),
     reading_type = "voltage",
-    time_stamp = getTime()    
+    //time_stamp = getTime()    
     })
     server.log(format("Supply Voltage: %2.3f", hardware.voltage()));
     bigdata.append({
@@ -547,7 +523,7 @@ function get_temp()
     serial = "lightlevel",
     reading = hardware.lightlevel()/10000.0,
     reading_type = "lightlevel",
-    time_stamp = getTime()    
+    //time_stamp = getTime()    
     })
     server.log(format("Light Level: %2.3f", hardware.lightlevel()/10000.0));
     return bigdata;
@@ -582,7 +558,7 @@ server.log( "BH1750: " + lux + " lux " );
     serial = "lux",
     reading = lux,
     reading_type = "lux",
-    time_stamp = getTime()    
+    //time_stamp = getTime()    
     })
 local temp2 = mysensorBMP.read_temp_Celsius();
     bigdata.append({
@@ -591,7 +567,7 @@ local temp2 = mysensorBMP.read_temp_Celsius();
     serial = "ambientbmp",
     reading = temp2,
     reading_type = "celcius",
-    time_stamp = getTime()    
+    //time_stamp = getTime()    
     })
 local pressure = mysensorBMP.read_pressure_atm();
     bigdata.append({
@@ -600,8 +576,7 @@ local pressure = mysensorBMP.read_pressure_atm();
     serial = "millibars",
     reading = pressure*1013.25,
     reading_type = "millibars",
-    time_stamp = getTime()    
+    //time_stamp = getTime()    
     })
 agent.send("bigdata", bigdata);
 server.log( "BMP180: " + temp2 + " C, " + pressure + " atm., " + pressure*1013.25 + " millibars" );
-
