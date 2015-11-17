@@ -1,36 +1,18 @@
-function logByLine(data, linebreak) {
-    local lines = split(data, linebreak);
-    foreach(line in lines) {
-        server.log(line);
+
+#require "Plotly.class.nut:1.0.0"
+
+function loggerCallback(error, response, decoded) {
+    if(error == null) {
+        server.log(response.body);
+    } else {
+        server.log(error);
     }
 }
 
-// returns time string
-// use 3600 and multiply by the hours +/- GMT.
-// e.g for +5 GMT local date = date(time()+18000, "u");
-function getTime() {
-    local date = date(time(), "u");
-    local sec = stringTime(date["sec"]);
-    local min = stringTime(date["min"]);
-    local hour = stringTime(date["hour"]);
-    local day = stringTime(date["day"]);
-    local month = stringTime(date["month"]+1);
-    local year = date["year"];
-    return year+"-"+month+"-"+day+" "+hour+":"+min+":"+sec;
-}
-
-// function to fix time string
-function stringTime(num) {
-    if (num < 10)
-        return "0"+num;
-    else
-        return ""+num;
-}
-
-device.on("bigdata" function(msg) {
+function postToPlotly(bigdata) {
+    local time_stamp = plot1.getPlotlyTimestamp();
     local data = [];
-    local time_stamp = getTime();
-    foreach (reading in msg)
+    foreach (reading in bigdata)
     {
         //server.log(reading.temp);
         local location="";
@@ -75,13 +57,22 @@ device.on("bigdata" function(msg) {
         });
     }
     
+    
+    plot1.post(data, loggerCallback);
+}
+
+local constructorCallback = function(error, response, decoded) {
+
+    if(error != null) {
+        server.log(error);
+        return;
+    }
+
+    device.on("bigdata", postToPlotly);
+
 
     // Plotly Layout Object
-    local layout = {
-        fileopt = "extend",
-        //filename = location,
-        filename = "Hydroponic Greenhouse Temperatures",
-        layout={
+    local layout={
             title="Hydroponic Greenhouse Temperatures"
             yaxis={
                 title="Temperature (°C)",
@@ -109,38 +100,23 @@ device.on("bigdata" function(msg) {
                 overlaying="y",
                 range=["0","1500"]
             }
-        }
-    };
-
-    // Setting up Data to be POSTed
-    local payload = {
-    un = "your_plotly_username",
-    key = "your_plotly_apikey",
-    origin = "plot",
-    platform = "electricimp",
-    args = http.jsonencode(data),
-    kwargs = http.jsonencode(layout),
-    version = "0.0.2"
-    };
-
-    // encode data and log
-    local headers = { "Content-Type" : "application/json" };
-    local body = http.urlencode(payload);
-    local url = "https://plot.ly/clientresp";
-    HttpPostWrapper(url, headers, body, false);
-    //logByLine(http.jsonencode(data), ",");
+        };
     
-});    
+    
 
-
-// Http Request Handler
-function HttpPostWrapper (url, headers, string, log) {
-  local request = http.post(url, headers, string);
-  local response = request.sendsync();
-  if (log)
-    server.log(http.jsonencode(response));
-    logByLine(http.jsonencode(response), ",");
-  return response;
+    plot1.setLayoutDirectly(layout, function(error, response, decoded) {
+        if(error != null) {
+            server.log(error);
+            return;
+        }
+        server.log(response);
+        server.log(decoded);
+        server.log("See plot at " + plot1.getUrl());
+    });
 }
+
+local traces = ["Ambient", "Lower Growbed", "Growbed Nutrient Tank", "Upper Growbed", "Lower NFT Nutrient Tank", "supplyvoltage", "lightlevel", "millibars", "ambientbmp", "lux"];
+plot1 <- Plotly("your_plotly_username", "your_plotly_api_key", "Hydroponic Greenhouse Temperatures", true, traces, constructorCallback);
+
 
 
