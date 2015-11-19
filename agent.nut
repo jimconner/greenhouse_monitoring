@@ -69,7 +69,7 @@ device.on("bigdata" function(msg) {
     };
 
     // encode data and log
-    local headers = { "Content-Type" : "application/json" };
+    local headers = { };
     local body = http.urlencode(payload);
     local url = "https://plot.ly/clientresp";
     HttpPostWrapper(url, headers, body, true);
