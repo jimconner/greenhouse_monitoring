@@ -304,7 +304,7 @@ local constructorCallback = function(error, response, decoded) {
                 },
                 {
                     "name" : "supplyvoltage",
-                    "yaxis" : "y"
+                    "yaxis" : "y2"
                 },
                 {
                     "name" : "lightlevel",
