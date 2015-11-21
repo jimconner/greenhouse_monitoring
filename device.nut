@@ -269,7 +269,7 @@ imp.onidle(function() {
     //server.log("Time for a nap.");
     //server.sleepfor(60);
     // every minute, on the minute
-    server.sleepfor(60 - (time() % 60));
+    server.sleepfor(120 - (time() % 120));
 });
 
 
